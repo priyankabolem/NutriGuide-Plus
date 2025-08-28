@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: nutriguide-plus-api
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "uvicorn app.main:api --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: ENV
+        value: production
+    healthCheckPath: /docs
+    autoDeploy: true
