@@ -41,14 +41,22 @@ def health_check():
 @api.get("/health", tags=["health"])
 def detailed_health():
     """Detailed health check endpoint"""
+    import datetime
     return {
         "status": "healthy",
         "service": "NutriGuide+ API",
-        "version": "1.0.0",
+        "version": "1.1.0",
+        "build": "2024-01-dynamic-foods",
+        "timestamp": datetime.datetime.utcnow().isoformat(),
         "endpoints": [
             "/analyze - Food analysis endpoint",
             "/verify - Nutrition verification endpoint"
-        ]
+        ],
+        "features": {
+            "dynamic_food_recognition": True,
+            "varied_responses": True,
+            "expanded_database": True
+        }
     }
 
 # Include routers

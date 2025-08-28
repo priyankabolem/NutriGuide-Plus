@@ -16,6 +16,9 @@ def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
     img_hash = hashlib.md5(img_bytes).hexdigest()
     hash_int = int(img_hash[:8], 16)
     
+    # Log for debugging (remove in production)
+    print(f"Image hash: {img_hash[:8]}, hash_int: {hash_int}")
+    
     # Food database with nutrition-appropriate items
     food_options = [
         [("grilled chicken", 0.85), ("chicken breast", 0.12), ("protein", 0.03)],
@@ -38,6 +41,9 @@ def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
     # Select food based on hash
     selected_idx = hash_int % len(food_options)
     selected_foods = food_options[selected_idx]
+    
+    # Log selected food for debugging
+    print(f"Selected index: {selected_idx}, food: {selected_foods[0][0]}")
     
     # Return top k items
     return selected_foods[:k]

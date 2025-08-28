@@ -1,0 +1,2 @@
+Force rebuild: 2024-01-28 22:50 UTC
+This file forces Render to rebuild the application with latest changes.
