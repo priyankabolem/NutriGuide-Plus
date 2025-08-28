@@ -45,8 +45,8 @@ def detailed_health():
     return {
         "status": "healthy",
         "service": "NutriGuide+ API",
-        "version": "1.1.0",
-        "build": "2024-01-dynamic-foods",
+        "version": "1.2.0",
+        "build": "2024-01-smart-recognition",
         "timestamp": datetime.datetime.utcnow().isoformat(),
         "endpoints": [
             "/analyze - Food analysis endpoint",
