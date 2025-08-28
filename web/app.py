@@ -70,10 +70,7 @@ st.markdown("# NutriGuide+")
 st.markdown("### AI-Powered Nutrition Analysis & Recipe Recommendations")
 st.markdown("---")
 
-# Display current API URL for debugging (remove in production)
-with st.expander("Debug Info"):
-    st.write(f"API URL: {API_URL}")
-    st.write(f"Analyze endpoint: {API_URL}/analyze")
+# Debug info removed for production
 
 # File upload section
 col1, col2 = st.columns([3, 1])
@@ -104,17 +101,12 @@ if uploaded_file:
                 analyze_url = f"{API_URL}/analyze"
                 payload = {"image_b64": b64_image, "notes": notes}
                 
-                # Debug info
-                st.write(f"Sending request to: {analyze_url}")
-                
                 # Call analyze endpoint
                 analyze_response = requests.post(
                     analyze_url,
                     json=payload,
                     timeout=30
                 )
-                
-                st.write(f"Response status: {analyze_response.status_code}")
                 
                 if analyze_response.status_code == 200:
                     recommendation = analyze_response.json()

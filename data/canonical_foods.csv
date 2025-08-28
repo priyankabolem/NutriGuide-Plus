@@ -1,6 +1,33 @@
 name,serving_grams,calories,protein_g,carbs_g,fat_g
 grilled chicken,150,280,40,0,12
+chicken breast,150,284,53.4,0,6.2
 rice (cooked),150,195,4,42,0.4
 mixed green salad,100,20,2,3,0
 banana,118,105,1.3,27,0.3
 pizza (cheese slice),107,285,12,36,10
+cheese pizza,107,272,10.6,33.8,10.5
+salmon,150,310,35,0,18
+grilled fish,150,220,42,0,5
+pasta,200,320,12,62,3
+spaghetti,200,316,11,61.8,1.8
+burger,200,450,28,35,22
+beef burger,200,563,30,40,33
+salad,200,150,5,10,10
+green salad,100,33,2.9,6.3,0.6
+sushi,200,300,12,50,5
+japanese food,200,320,15,48,8
+steak,200,500,48,0,34
+beef,150,396,36,0,27
+sandwich,200,380,22,40,14
+turkey sandwich,200,324,24,29,12
+rice bowl,200,400,12,68,8
+tacos,200,420,20,38,22
+mexican food,200,450,18,45,24
+soup,250,180,8,22,6
+vegetable soup,250,120,5,18,3
+eggs,100,155,13,1.1,11
+scrambled eggs,100,148,10,2,11
+pancakes,150,350,8,60,10
+breakfast,200,400,15,55,15
+fruit bowl,200,120,2,30,0.5
+mixed fruit,200,130,2,33,0.4
