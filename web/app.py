@@ -58,10 +58,10 @@ st.markdown("""
 def get_api_url():
     # Check Streamlit secrets first
     if "api_url" in st.secrets:
-        return st.secrets["api_url"]
+        return st.secrets["api_url"].rstrip('/')  # Remove trailing slash
     # Fall back to environment variable
     api_url = os.getenv("API_URL", "http://localhost:8000")
-    return api_url
+    return api_url.rstrip('/')  # Remove trailing slash
 
 API_URL = get_api_url()
 
@@ -69,6 +69,11 @@ API_URL = get_api_url()
 st.markdown("# NutriGuide+")
 st.markdown("### AI-Powered Nutrition Analysis & Recipe Recommendations")
 st.markdown("---")
+
+# Display current API URL for debugging (remove in production)
+with st.expander("Debug Info"):
+    st.write(f"API URL: {API_URL}")
+    st.write(f"Analyze endpoint: {API_URL}/analyze")
 
 # File upload section
 col1, col2 = st.columns([3, 1])
@@ -95,12 +100,21 @@ if uploaded_file:
                 uploaded_file.seek(0)  # Reset file pointer
                 b64_image = base64.b64encode(uploaded_file.read()).decode()
                 
+                # Prepare request
+                analyze_url = f"{API_URL}/analyze"
+                payload = {"image_b64": b64_image, "notes": notes}
+                
+                # Debug info
+                st.write(f"Sending request to: {analyze_url}")
+                
                 # Call analyze endpoint
                 analyze_response = requests.post(
-                    f"{API_URL}/analyze",
-                    json={"image_b64": b64_image, "notes": notes},
+                    analyze_url,
+                    json=payload,
                     timeout=30
                 )
+                
+                st.write(f"Response status: {analyze_response.status_code}")
                 
                 if analyze_response.status_code == 200:
                     recommendation = analyze_response.json()
@@ -176,13 +190,17 @@ if uploaded_file:
                 
                 else:
                     st.error(f"Error analyzing image: {analyze_response.status_code}")
+                    st.error(f"Response: {analyze_response.text}")
                     
         except requests.exceptions.Timeout:
             st.error("Request timed out. Please try again.")
-        except requests.exceptions.ConnectionError:
-            st.error("Could not connect to the analysis service. Please ensure the API is running.")
+        except requests.exceptions.ConnectionError as e:
+            st.error(f"Could not connect to the analysis service at {API_URL}")
+            st.error(f"Error details: {str(e)}")
+            st.error("Please check that the API URL is correct in Streamlit secrets.")
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
+            st.error(f"Error type: {type(e).__name__}")
 
 # Footer
 st.markdown("---")
