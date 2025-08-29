@@ -4,25 +4,11 @@ import requests
 from PIL import Image
 from typing import List, Tuple, Optional
 import json
-from transformers import pipeline, AutoImageProcessor, AutoModelForImageClassification
+import numpy as np
 
 class RealFoodRecognizer:
     def __init__(self):
-        self.model = None
-        self.processor = None
-        self.initialize_model()
-    
-    def initialize_model(self):
-        """Initialize the food recognition model"""
-        try:
-            # Use Google's food vision model
-            model_name = "google/vit-base-patch16-224"
-            self.processor = AutoImageProcessor.from_pretrained(model_name)
-            self.model = AutoModelForImageClassification.from_pretrained(model_name)
-            print("✓ Food recognition model loaded successfully")
-        except Exception as e:
-            print(f"⚠ Model loading failed: {e}. Using fallback recognition.")
-            self.model = None
+        print("✓ Lightweight food recognition initialized")
     
     def analyze_image_content(self, img: Image.Image) -> dict:
         """Analyze actual image content for food characteristics"""
@@ -156,51 +142,32 @@ def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
         # Get primary food classification
         primary_food = food_recognizer.classify_food_by_characteristics(analysis)
         
-        # Try to use the AI model if available
-        ai_predictions = []
-        if food_recognizer.model and food_recognizer.processor:
-            try:
-                inputs = food_recognizer.processor(img, return_tensors="pt")
-                outputs = food_recognizer.model(**inputs)
-                predictions = outputs.logits.softmax(-1)
-                
-                # Get top predictions
-                top_indices = predictions[0].argsort(descending=True)[:k]
-                ai_predictions = [(f"detected_item_{i}", float(predictions[0][idx])) 
-                                for i, idx in enumerate(top_indices)]
-            except Exception as e:
-                print(f"AI model prediction failed: {e}")
+        # Generate confidence-based predictions using analysis
+        confidence_base = 0.75
         
-        # Combine analysis-based and AI-based predictions
-        if ai_predictions:
-            # Use AI model primary prediction but enhance with analysis
-            results = [
-                (primary_food, min(0.85 + analysis["texture_complexity"] / 10000, 0.95)),
-                (ai_predictions[0][0] if ai_predictions else "alternative_dish", 0.12),
-                (ai_predictions[1][0] if len(ai_predictions) > 1 else "mixed_food", 0.03)
-            ]
-        else:
-            # Use analysis-based predictions
-            confidence_base = 0.7
-            if analysis["texture_complexity"] > 100:
-                confidence_base += 0.1
-            if len(analysis["dominant_colors"]) >= 2:
-                confidence_base += 0.05
-            
-            # Generate alternative foods based on characteristics
-            alternatives = []
-            if analysis["green_ratio"] > 0.1:
-                alternatives.append("vegetable dish")
-            if analysis["brown_ratio"] > 0.1:
-                alternatives.append("meat dish")
-            if analysis["white_ratio"] > 0.2:
-                alternatives.append("rice or pasta")
-            
-            results = [
-                (primary_food, min(confidence_base, 0.95)),
-                (alternatives[0] if alternatives else "side dish", 0.15),
-                (alternatives[1] if len(alternatives) > 1 else "mixed meal", 0.05)
-            ]
+        # Increase confidence based on strong visual indicators
+        if analysis["texture_complexity"] > 200:
+            confidence_base += 0.1
+        if len(analysis["dominant_colors"]) >= 2:
+            confidence_base += 0.05
+        
+        # Generate alternative foods based on visual characteristics
+        alternatives = []
+        if analysis["green_ratio"] > 0.15:
+            alternatives.append("vegetable dish")
+        if analysis["brown_ratio"] > 0.2:
+            alternatives.append("meat dish")
+        if analysis["white_ratio"] > 0.25:
+            alternatives.append("rice or pasta")
+        if analysis["red_ratio"] > 0.1 and analysis["white_ratio"] > 0.1:
+            alternatives.append("pizza")
+        
+        # Build final predictions
+        results = [
+            (primary_food, min(confidence_base, 0.95)),
+            (alternatives[0] if alternatives else "side dish", 0.18),
+            (alternatives[1] if len(alternatives) > 1 else "mixed meal", 0.07)
+        ]
         
         # Log analysis for debugging
         print(f"Real food analysis:")
