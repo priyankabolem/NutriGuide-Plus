@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import analyze, verify
+from .routers import analyze, verify, debug
 
 # API configuration
 api = FastAPI(
@@ -83,3 +83,4 @@ def detailed_health():
 # Include routers
 api.include_router(analyze.router, prefix="/analyze", tags=["Analysis"])
 api.include_router(verify.router, prefix="/verify", tags=["Verification"])
+api.include_router(debug.router, prefix="/debug", tags=["Debug"])

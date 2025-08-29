@@ -68,7 +68,8 @@ class HybridFoodRecognizer:
         results = {}
         
         # 1. Try Google Vision API (if available)
-        if os.environ.get('GOOGLE_APPLICATION_CREDENTIALS') or self._check_google_auth():
+        google_api_key = os.environ.get('GOOGLE_VISION_API_KEY')
+        if google_api_key or os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'):
             try:
                 gv_result = detect_food_with_google_vision(image_b64)
                 results['google_vision'] = {
@@ -76,10 +77,12 @@ class HybridFoodRecognizer:
                     'confidence': gv_result[1],
                     'features': gv_result[2]
                 }
+                print(f"✓ Google Vision detected: {gv_result[0]} ({gv_result[1]:.2f})")
             except Exception as e:
                 print(f"Google Vision error: {e}")
                 results['google_vision'] = None
         else:
+            print("⚠ Google Vision API not configured")
             results['google_vision'] = None
         
         # 2. Advanced Color Histogram Analysis

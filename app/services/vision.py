@@ -349,6 +349,9 @@ def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
         # Check if Google Vision API is available and prioritize it
         google_api_key = os.environ.get('GOOGLE_VISION_API_KEY')
         
+        print(f"🔍 Vision Service Status:")
+        print(f"   Google API Key: {'✓ Configured' if google_api_key else '✗ Not found'}")
+        
         if google_api_key:
             print("🚀 Using Google Vision API for professional-grade accuracy")
             try:
