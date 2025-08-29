@@ -6,6 +6,32 @@ from ..models import FoodScan, Recommendation
 from ..services.vision import classify_topk
 from ..services.generator import generate_profile_and_recipes
 
+def determine_fallback_food(img: Image.Image) -> str:
+    """Determine a reasonable fallback food based on basic image analysis"""
+    # Simple heuristics for fallback identification
+    img_small = img.resize((100, 100))
+    pixels = list(img_small.getdata())
+    
+    # Color analysis for fallback
+    total_pixels = len(pixels)
+    green_count = sum(1 for r, g, b in pixels if g > max(r, b) + 20)
+    brown_count = sum(1 for r, g, b in pixels if 80 < r < 180 and 40 < g < 120 and b < 80)
+    white_count = sum(1 for r, g, b in pixels if r > 180 and g > 180 and b > 180)
+    
+    green_ratio = green_count / total_pixels
+    brown_ratio = brown_count / total_pixels
+    white_ratio = white_count / total_pixels
+    
+    # Simple fallback logic
+    if green_ratio > 0.2:
+        return "vegetables"
+    elif brown_ratio > 0.25:
+        return "cooked food"
+    elif white_ratio > 0.3:
+        return "rice"
+    else:
+        return "mixed dish"
+
 router = APIRouter()
 
 @router.post("", response_model=Recommendation)
@@ -41,20 +67,26 @@ def analyze(scan: FoodScan):
         if not topk:
             raise HTTPException(status_code=422, detail="Could not analyze the uploaded image")
         
-        # Check confidence threshold
+        # Enhanced confidence handling with intelligent fallbacks
         primary_confidence = topk[0][1]
-        if primary_confidence < 0.3:
-            # Low confidence - provide general guidance with disclaimer
-            topk = [("mixed dish", 0.3)]
-            print(f"⚠ Low confidence detection: {topk[0][0]} ({primary_confidence:.2f})")
+        primary_food = topk[0][0]
+        
+        if primary_confidence < 0.4:
+            # Low confidence - use generic but reasonable estimates
+            fallback_food = determine_fallback_food(img)
+            topk = [(fallback_food, 0.4)]
+            print(f"⚠ Low confidence, using fallback: {fallback_food}")
         
         # Generate comprehensive recommendation
         recommendation = generate_profile_and_recipes(topk, notes=scan.notes)
         
-        # Add confidence note to profile name if moderate confidence
-        if 0.3 <= primary_confidence < 0.7:
+        # Add appropriate confidence indicators
+        if primary_confidence < 0.6:
             recommendation.profile.name = f"{recommendation.profile.name} (estimated)"
-            print(f"⚠ Moderate confidence detection: {topk[0][0]} ({primary_confidence:.2f})")
+        elif 0.6 <= primary_confidence < 0.8:
+            recommendation.profile.name = f"{recommendation.profile.name}"
+        
+        print(f"✓ Final result: {recommendation.profile.name} ({primary_confidence:.2f})")
         
         return recommendation
     

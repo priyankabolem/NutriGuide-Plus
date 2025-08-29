@@ -5,11 +5,26 @@ import os
 from ..models import NutritionProfile, Recommendation, RecipeCard
 
 def load_nutrition_database():
-    """Load USDA nutrition database"""
+    """Load comprehensive nutrition database"""
     try:
-        db_path = os.path.join(os.path.dirname(__file__), "../../data/usda_nutrition.json")
+        # Try comprehensive database first
+        db_path = os.path.join(os.path.dirname(__file__), "../../data/comprehensive_nutrition.json")
         with open(db_path, 'r') as f:
-            return json.load(f)
+            comprehensive_db = json.load(f)
+        
+        # Load original USDA data as fallback
+        usda_path = os.path.join(os.path.dirname(__file__), "../../data/usda_nutrition.json")
+        try:
+            with open(usda_path, 'r') as f:
+                usda_db = json.load(f)
+            # Merge databases
+            comprehensive_db.update(usda_db)
+        except:
+            pass
+            
+        print(f"✓ Loaded {len(comprehensive_db)} food items in nutrition database")
+        return comprehensive_db
+        
     except Exception as e:
         print(f"Error loading nutrition database: {e}")
         return {}
@@ -18,25 +33,56 @@ def load_nutrition_database():
 NUTRITION_DB = load_nutrition_database()
 
 def get_nutrition_from_database(food_name: str) -> Optional[dict]:
-    """Get nutrition data from USDA database"""
+    """Get nutrition data from comprehensive database with intelligent matching"""
     food_lower = food_name.lower().strip()
     
     # Direct lookup first
     if food_lower in NUTRITION_DB:
         return NUTRITION_DB[food_lower]
     
-    # Fuzzy matching for similar foods
+    # Enhanced fuzzy matching for better accuracy
+    best_match = None
+    best_score = 0
+    
     for db_food, data in NUTRITION_DB.items():
-        # Check if any word from the detected food matches database entries
-        food_words = food_lower.split()
-        db_words = db_food.split()
+        # Calculate similarity score
+        score = calculate_food_similarity(food_lower, db_food)
         
-        # If any significant word matches, use that entry
-        for word in food_words:
-            if len(word) > 3 and word in db_words:
-                return data
+        if score > best_score and score > 0.5:  # Minimum similarity threshold
+            best_score = score
+            best_match = data
+    
+    if best_match:
+        print(f"✓ Found nutrition match: {food_lower} → score {best_score:.2f}")
+        return best_match
     
     return None
+
+def calculate_food_similarity(food1: str, food2: str) -> float:
+    """Calculate similarity between two food names"""
+    words1 = set(food1.split())
+    words2 = set(food2.split())
+    
+    # Exact match
+    if food1 == food2:
+        return 1.0
+    
+    # Word overlap score
+    common_words = words1 & words2
+    if not common_words:
+        return 0.0
+    
+    # Calculate Jaccard similarity
+    union_words = words1 | words2
+    jaccard = len(common_words) / len(union_words)
+    
+    # Boost score for key food words
+    key_words = ["chicken", "beef", "fish", "pizza", "salad", "rice", "pasta", "bread", "fruit"]
+    for word in common_words:
+        if word in key_words:
+            jaccard += 0.2
+    
+    return min(jaccard, 1.0)
 
 def calculate_dynamic_nutrition(food_name: str, serving_grams: float = None) -> dict:
     """Calculate nutrition using real USDA database with fallback estimation"""
