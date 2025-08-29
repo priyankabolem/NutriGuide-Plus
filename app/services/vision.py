@@ -36,73 +36,110 @@ def analyze_image_characteristics(img: Image.Image) -> dict:
     ]).mean()
     circularity = abs(center_brightness - edge_brightness)
     
+    # Calculate color saturation
+    hsv = img.convert('HSV')
+    hsv_array = np.array(hsv.resize((100, 100)))
+    saturation = hsv_array[:,:,1].mean()
+    
+    # Get dominant color temperature
+    warm_score = (avg_colors[0] + avg_colors[1]/2) / 255  # Red + half yellow
+    cool_score = (avg_colors[2] + avg_colors[1]/2) / 255  # Blue + half green
+    
     return {
         'red': red_dominance,
         'green': green_dominance,
         'blue': blue_dominance,
         'brightness': brightness,
         'variance': color_variance,
-        'circularity': circularity
+        'circularity': circularity,
+        'saturation': saturation,
+        'warm_score': warm_score,
+        'cool_score': cool_score
     }
 
 def classify_food_by_characteristics(chars: dict) -> str:
     """Classify food based on image characteristics"""
     
-    # Pizza detection (red/orange dominant, circular, medium brightness)
-    if chars['red'] > 0.38 and chars['circularity'] < 30 and 100 < chars['brightness'] < 180:
+    # Log all characteristics for debugging
+    print(f"Classification input - Brightness: {chars['brightness']:.1f}, Variance: {chars['variance']:.1f}, "
+          f"Circularity: {chars['circularity']:.1f}, Saturation: {chars['saturation']:.1f}")
+    
+    # Pizza detection (red/orange dominant, circular, high saturation)
+    if (chars['red'] > 0.36 and chars['saturation'] > 80 and 
+        chars['circularity'] < 40 and chars['warm_score'] > 0.7):
         return "pizza"
     
-    # Salad detection (green dominant, high variance)
-    if chars['green'] > 0.36 and chars['variance'] > 40:
-        return "salad"
-    
-    # Chicken/meat detection (brown/beige, medium brightness)
-    if 0.33 < chars['red'] < 0.38 and chars['green'] > 0.30 and chars['brightness'] > 120:
-        return "grilled chicken"
-    
-    # Pasta detection (yellow/beige, medium variance)
-    if chars['red'] > 0.35 and chars['green'] > 0.33 and chars['variance'] < 35:
-        return "pasta"
-    
-    # Burger detection (brown with layers, circular)
-    if chars['variance'] > 45 and chars['circularity'] < 25 and chars['brightness'] > 100:
-        return "burger"
-    
-    # Fruit detection (bright, colorful)
-    if chars['brightness'] > 150 and (chars['red'] > 0.4 or chars['green'] > 0.38):
+    # Fruit detection (very bright, high saturation, varied colors)
+    if chars['brightness'] > 180 and chars['saturation'] > 100:
         return "fruit bowl"
     
-    # Salmon/fish detection (pink/orange)
-    if chars['red'] > 0.37 and 0.25 < chars['green'] < 0.33:
-        return "salmon"
+    # Salad detection (green dominant, high variance/texture)
+    if chars['green'] > 0.35 and (chars['variance'] > 50 or chars['saturation'] > 90):
+        return "salad"
     
-    # Eggs detection (white/yellow, high brightness)
-    if chars['brightness'] > 180 and chars['variance'] < 30:
+    # Eggs detection (very bright, low saturation)
+    if chars['brightness'] > 200 and chars['saturation'] < 50:
         return "eggs"
     
-    # Soup detection (uniform color, low variance)
-    if chars['variance'] < 25 and chars['brightness'] < 150:
+    # Pasta detection (beige/yellow, medium brightness, low variance)
+    if (chars['brightness'] > 150 and chars['red'] > 0.34 and 
+        chars['green'] > 0.32 and chars['variance'] < 40):
+        return "pasta"
+    
+    # Burger detection (circular, layered, medium darkness)
+    if (chars['circularity'] < 35 and chars['variance'] > 45 and 
+        80 < chars['brightness'] < 150):
+        return "burger"
+    
+    # Salmon/fish detection (pink/orange hues)
+    if (chars['red'] > 0.37 and chars['green'] < 0.33 and 
+        chars['saturation'] > 60):
+        return "salmon"
+    
+    # Soup detection (uniform, liquid appearance)
+    if chars['variance'] < 30 and chars['brightness'] < 140:
         return "soup"
     
-    # Sushi detection (white rice visible, structured)
-    if chars['brightness'] > 160 and 30 < chars['variance'] < 45:
-        return "sushi"
-    
-    # Dark foods (steak, etc)
-    if chars['brightness'] < 100:
+    # Steak detection (dark, reddish-brown)
+    if chars['brightness'] < 100 and chars['red'] > chars['blue']:
         return "steak"
     
-    # Rice/grain bowls (uniform, beige)
-    if chars['variance'] < 30 and 120 < chars['brightness'] < 160:
+    # Sushi detection (white rice visible, structured)
+    if (chars['brightness'] > 140 and 35 < chars['variance'] < 55 and
+        chars['saturation'] < 80):
+        return "sushi"
+    
+    # Rice bowl detection (uniform, beige/white)
+    if (chars['variance'] < 35 and 140 < chars['brightness'] < 180 and
+        chars['saturation'] < 60):
         return "rice bowl"
     
-    # Default fallbacks based on color dominance
-    if chars['green'] > chars['red'] and chars['green'] > chars['blue']:
-        return "salad"
-    elif chars['red'] > chars['green'] and chars['red'] > chars['blue']:
-        return "grilled chicken"
-    else:
+    # Sandwich detection (layered, medium tones)
+    if 40 < chars['variance'] < 60 and 120 < chars['brightness'] < 170:
         return "sandwich"
+    
+    # Tacos detection (warm colors, textured)
+    if chars['warm_score'] > 0.65 and chars['variance'] > 45:
+        return "tacos"
+    
+    # Pancakes detection (circular, golden brown)
+    if (chars['circularity'] < 30 and chars['warm_score'] > 0.6 and
+        120 < chars['brightness'] < 160):
+        return "pancakes"
+    
+    # Enhanced default logic based on color dominance
+    if chars['green'] > chars['red'] * 1.1 and chars['green'] > chars['blue'] * 1.1:
+        return "salad"  # Clearly green
+    elif chars['brightness'] < 120:
+        return "steak"  # Dark foods
+    elif chars['brightness'] > 180:
+        return "eggs"  # Bright foods
+    elif chars['variance'] > 50:
+        return "burger"  # Textured foods
+    elif chars['warm_score'] > 0.7:
+        return "grilled chicken"  # Warm colored foods
+    else:
+        return "sandwich"  # Default
 
 def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
     """
@@ -133,7 +170,9 @@ def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
         "rice bowl": [("rice bowl", 0.79), ("rice", 0.16), ("asian food", 0.05)],
         "fruit bowl": [("fruit bowl", 0.86), ("mixed fruit", 0.09), ("healthy", 0.05)],
         "eggs": [("eggs", 0.87), ("scrambled eggs", 0.08), ("breakfast", 0.05)],
-        "soup": [("soup", 0.83), ("vegetable soup", 0.12), ("hot food", 0.05)]
+        "soup": [("soup", 0.83), ("vegetable soup", 0.12), ("hot food", 0.05)],
+        "tacos": [("tacos", 0.81), ("mexican food", 0.14), ("tortilla", 0.05)],
+        "pancakes": [("pancakes", 0.82), ("breakfast", 0.13), ("syrup", 0.05)]
     }
     
     # Get predictions for the identified food
@@ -147,10 +186,13 @@ def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
             ("food", 0.05)
         ]
     
-    # Log for debugging
-    print(f"Image characteristics: R={chars['red']:.3f}, G={chars['green']:.3f}, B={chars['blue']:.3f}")
-    print(f"Brightness={chars['brightness']:.1f}, Variance={chars['variance']:.1f}")
-    print(f"Detected food: {primary_food}")
+    # Enhanced logging
+    print(f"Image analysis complete:")
+    print(f"  RGB: R={chars['red']:.3f}, G={chars['green']:.3f}, B={chars['blue']:.3f}")
+    print(f"  Metrics: Brightness={chars['brightness']:.1f}, Variance={chars['variance']:.1f}, "
+          f"Saturation={chars['saturation']:.1f}")
+    print(f"  Scores: Warm={chars['warm_score']:.2f}, Cool={chars['cool_score']:.2f}")
+    print(f"  => Detected food: {primary_food}")
     
     # Return top k items
     return predictions[:k]

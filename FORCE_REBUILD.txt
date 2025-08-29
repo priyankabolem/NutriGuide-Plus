@@ -1,2 +1,5 @@
-Force rebuild: 2024-01-28 23:10 UTC - Smart Recognition Update
-This file forces Render to rebuild the application with image-based food recognition.
+Force rebuild: 2024-01-28 23:30 UTC - Enhanced Classification v1.3
+- Fixed classification thresholds
+- Added saturation and color temperature analysis
+- Improved default fallback logic
+- Added nutrition data for all 15 food types

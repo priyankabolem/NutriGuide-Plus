@@ -165,6 +165,139 @@ NUTRITION_DATA = {
                 ingredients=["mixed greens", "nuts", "seeds", "dried fruit", "vinaigrette"]
             )
         ]
+    },
+    "eggs": {
+        "serving_grams": 100.0,
+        "calories": 155.0,
+        "macros": {"protein_g": 13.0, "carbs_g": 1.1, "fat_g": 11.0},
+        "recipes": [
+            RecipeCard(
+                title="Veggie Scrambled Eggs",
+                steps=[
+                    "Whisk eggs with a splash of milk",
+                    "Sauté vegetables in pan",
+                    "Pour eggs over vegetables",
+                    "Scramble until fluffy"
+                ],
+                time_minutes=10,
+                cost_estimate_usd=4.00,
+                ingredients=["eggs", "milk", "vegetables", "butter"]
+            )
+        ]
+    },
+    "soup": {
+        "serving_grams": 250.0,
+        "calories": 120.0,
+        "macros": {"protein_g": 5.0, "carbs_g": 18.0, "fat_g": 3.0},
+        "recipes": [
+            RecipeCard(
+                title="Hearty Vegetable Soup",
+                steps=[
+                    "Sauté onions and garlic",
+                    "Add vegetables and broth",
+                    "Simmer for 20 minutes",
+                    "Season to taste"
+                ],
+                time_minutes=30,
+                cost_estimate_usd=5.00,
+                ingredients=["vegetables", "broth", "onions", "garlic", "herbs"]
+            )
+        ]
+    },
+    "rice bowl": {
+        "serving_grams": 200.0,
+        "calories": 400.0,
+        "macros": {"protein_g": 12.0, "carbs_g": 68.0, "fat_g": 8.0},
+        "recipes": [
+            RecipeCard(
+                title="Asian Rice Bowl",
+                steps=[
+                    "Cook rice according to package",
+                    "Stir-fry vegetables and protein",
+                    "Place over rice",
+                    "Drizzle with sauce"
+                ],
+                time_minutes=25,
+                cost_estimate_usd=7.00,
+                ingredients=["rice", "vegetables", "protein", "soy sauce"]
+            )
+        ]
+    },
+    "sandwich": {
+        "serving_grams": 200.0,
+        "calories": 380.0,
+        "macros": {"protein_g": 22.0, "carbs_g": 40.0, "fat_g": 14.0},
+        "recipes": [
+            RecipeCard(
+                title="Gourmet Sandwich",
+                steps=[
+                    "Toast bread lightly",
+                    "Layer with proteins and vegetables",
+                    "Add condiments",
+                    "Cut diagonally and serve"
+                ],
+                time_minutes=10,
+                cost_estimate_usd=6.00,
+                ingredients=["bread", "turkey", "cheese", "lettuce", "tomato"]
+            )
+        ]
+    },
+    "tacos": {
+        "serving_grams": 200.0,
+        "calories": 420.0,
+        "macros": {"protein_g": 20.0, "carbs_g": 38.0, "fat_g": 22.0},
+        "recipes": [
+            RecipeCard(
+                title="Fresh Fish Tacos",
+                steps=[
+                    "Season and grill fish",
+                    "Warm tortillas",
+                    "Prepare fresh salsa and slaw",
+                    "Assemble with toppings"
+                ],
+                time_minutes=20,
+                cost_estimate_usd=8.00,
+                ingredients=["fish", "tortillas", "cabbage", "salsa", "lime"]
+            )
+        ]
+    },
+    "pancakes": {
+        "serving_grams": 150.0,
+        "calories": 350.0,
+        "macros": {"protein_g": 8.0, "carbs_g": 60.0, "fat_g": 10.0},
+        "recipes": [
+            RecipeCard(
+                title="Protein Pancakes",
+                steps=[
+                    "Mix pancake batter with protein powder",
+                    "Cook on griddle until bubbles form",
+                    "Flip and cook until golden",
+                    "Serve with fresh fruit"
+                ],
+                time_minutes=15,
+                cost_estimate_usd=5.00,
+                ingredients=["pancake mix", "protein powder", "eggs", "berries"]
+            )
+        ]
+    },
+    "fruit bowl": {
+        "serving_grams": 200.0,
+        "calories": 120.0,
+        "macros": {"protein_g": 2.0, "carbs_g": 30.0, "fat_g": 0.5},
+        "recipes": [
+            RecipeCard(
+                title="Tropical Fruit Bowl",
+                steps=[
+                    "Cut fresh fruits into bite-sized pieces",
+                    "Mix in a large bowl",
+                    "Add mint leaves",
+                    "Drizzle with honey if desired"
+                ],
+                time_minutes=10,
+                cost_estimate_usd=6.00,
+                ingredients=["pineapple", "mango", "berries", "mint", "honey"]
+            )
+        ]
     }
 }
 
