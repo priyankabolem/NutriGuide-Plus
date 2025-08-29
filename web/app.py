@@ -3,6 +3,23 @@ import base64
 import requests
 import os
 import json
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+from PIL import Image
+import io
+
+# Configure requests session with retry logic
+session = requests.Session()
+retry = Retry(
+    total=3,
+    read=3,
+    connect=3,
+    backoff_factor=0.3,
+    status_forcelist=(500, 502, 504)
+)
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 # Page config
 st.set_page_config(
@@ -93,19 +110,47 @@ if uploaded_file:
     if st.button("Analyze Nutrition", key="analyze_btn", use_container_width=True):
         try:
             with st.spinner("Analyzing your food..."):
-                # Encode image
+                # Optimize image before encoding
                 uploaded_file.seek(0)  # Reset file pointer
-                b64_image = base64.b64encode(uploaded_file.read()).decode()
+                img = Image.open(uploaded_file)
+                
+                # Convert RGBA to RGB if needed
+                if img.mode == 'RGBA':
+                    rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                    rgb_img.paste(img, mask=img.split()[3])
+                    img = rgb_img
+                
+                # Resize if too large (max 1024px on longest side)
+                max_size = 1024
+                if max(img.size) > max_size:
+                    ratio = max_size / max(img.size)
+                    new_size = tuple(int(dim * ratio) for dim in img.size)
+                    img = img.resize(new_size, Image.Resampling.LANCZOS)
+                    st.info("Image resized for optimal processing.")
+                
+                # Save optimized image to bytes
+                img_buffer = io.BytesIO()
+                img.save(img_buffer, format='JPEG', quality=85, optimize=True)
+                img_buffer.seek(0)
+                b64_image = base64.b64encode(img_buffer.read()).decode()
                 
                 # Prepare request
                 analyze_url = f"{API_URL}/analyze"
                 payload = {"image_b64": b64_image, "notes": notes}
                 
-                # Call analyze endpoint
-                analyze_response = requests.post(
+                # Call analyze endpoint with proper headers and streaming
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Accept-Encoding': 'gzip, deflate'
+                }
+                
+                analyze_response = session.post(
                     analyze_url,
                     json=payload,
-                    timeout=30
+                    timeout=45,  # Increase timeout
+                    headers=headers,
+                    stream=False  # Ensure response is not streamed
                 )
                 
                 if analyze_response.status_code == 200:
@@ -137,10 +182,12 @@ if uploaded_file:
                     
                     # Verify nutrition data
                     with st.spinner("Verifying nutrition data..."):
-                        verify_response = requests.post(
+                        verify_response = session.post(
                             f"{API_URL}/verify",
                             json=profile,
-                            timeout=30
+                            timeout=45,
+                            headers=headers,
+                            stream=False
                         )
                         
                         if verify_response.status_code == 200:
@@ -185,14 +232,26 @@ if uploaded_file:
                     st.error(f"Response: {analyze_response.text}")
                     
         except requests.exceptions.Timeout:
-            st.error("Request timed out. Please try again.")
+            st.error("Request timed out. Please try again with a smaller image.")
+            st.info("Tip: Try uploading a photo under 5MB for faster processing.")
+        except requests.exceptions.ChunkedEncodingError as e:
+            st.error("Network error: The connection was interrupted.")
+            st.info("This usually happens with unstable connections. Please try again.")
+            if st.button("Retry Analysis", key="retry_chunked"):
+                st.experimental_rerun()
         except requests.exceptions.ConnectionError as e:
             st.error(f"Could not connect to the analysis service at {API_URL}")
-            st.error(f"Error details: {str(e)}")
-            st.error("Please check that the API URL is correct in Streamlit secrets.")
+            st.error("Please check your internet connection and try again.")
+        except requests.exceptions.RequestException as e:
+            st.error(f"Network error: {type(e).__name__}")
+            st.error("Please check your connection and try again.")
+        except json.JSONDecodeError as e:
+            st.error("Error parsing response from server.")
+            st.error("The server may be experiencing issues. Please try again later.")
         except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+            st.error(f"An unexpected error occurred: {str(e)}")
             st.error(f"Error type: {type(e).__name__}")
+            st.info("If this persists, please try refreshing the page.")
 
 # Footer
 st.markdown("---")

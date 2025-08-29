@@ -28,6 +28,25 @@ api.add_middleware(
     allow_headers=["*"],
 )
 
+# Add response size and timeout middleware
+from fastapi.middleware.gzip import GZipMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+import time
+
+class TimeoutMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = str(process_time)
+        return response
+
+# Add middleware to handle large responses
+api.add_middleware(GZipMiddleware, minimum_size=1000)
+api.add_middleware(TimeoutMiddleware)
+
 # Health check endpoint
 @api.get("/", tags=["health"])
 def health_check():
