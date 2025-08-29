@@ -121,6 +121,29 @@ def get_nutrition_from_database(food_name: str) -> Optional[dict]:
     """Get nutrition data from comprehensive database with intelligent matching and API fallback"""
     food_lower = food_name.lower().strip()
     
+    # Common name mappings
+    name_mappings = {
+        "grilled chicken": "grilled chicken breast",
+        "chicken": "grilled chicken breast",
+        "beef": "grilled steak",
+        "fish": "grilled fish",
+        "vegetables": "mixed vegetables",
+        "grain dish": "rice",
+        "breakfast item": "scrambled eggs",
+        "main dish": "mixed dish",
+        "side dish": "rice",
+        "dairy product": "yogurt",
+        "fruit dish": "fruit bowl",
+        "cooked dish": "mixed dish",
+        "grilled meat": "grilled chicken breast",
+        "meat": "grilled steak",
+        "dairy": "milk"
+    }
+    
+    # Apply mapping if exists
+    if food_lower in name_mappings:
+        food_lower = name_mappings[food_lower]
+    
     # Direct lookup first
     if food_lower in NUTRITION_DB:
         return NUTRITION_DB[food_lower]

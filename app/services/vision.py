@@ -7,6 +7,8 @@ import json
 import numpy as np
 from .food_api import get_enhanced_food_classification
 from .food_recognizer import get_free_food_recognition
+from .intelligent_recognition import get_intelligent_food_recognition
+from .robust_food_detection import get_robust_food_detection
 
 class SmartFoodRecognizer:
     def __init__(self):
@@ -346,15 +348,35 @@ def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
         img_bytes = base64.b64decode(image_b64)
         img = Image.open(io.BytesIO(img_bytes))
         
-        # Use free food recognition with advanced algorithms
-        primary_food, confidence = get_free_food_recognition(image_b64, img)
+        # Use robust detection system for best accuracy
+        primary_food, confidence, features = get_robust_food_detection(image_b64)
         
-        if confidence > 0.6:
-            print(f"✓ Advanced Recognition: {primary_food} ({confidence:.2f})")
-            
-            # Generate related foods based on result
-            related_foods = generate_related_foods(primary_food)
-            
+        print(f"✓ Robust Detection: {primary_food} ({confidence:.2f})")
+        
+        # Always use the result (robust detector always returns something meaningful)
+        # Generate related foods based on detected food
+        related_foods = generate_related_foods(primary_food)
+        
+        # If we have low confidence, adjust the alternatives
+        if confidence < 0.7:
+            # Use feature-based alternatives
+            alt_foods = []
+            if features.get("dominant_color") == "green_dominant":
+                alt_foods = ["vegetables", "salad"]
+            elif features.get("dominant_color") == "brown_dominant":
+                alt_foods = ["meat", "bread"]
+            elif features.get("dominant_color") == "white_dominant":
+                alt_foods = ["rice", "dairy"]
+            else:
+                alt_foods = related_foods
+                
+            return [
+                (primary_food, confidence),
+                (alt_foods[0] if len(alt_foods) > 0 else "side dish", 0.15),
+                (alt_foods[1] if len(alt_foods) > 1 else "vegetable", 0.10)
+            ][:k]
+        else:
+            # High confidence - use standard related foods
             return [
                 (primary_food, confidence),
                 (related_foods[0], 0.15),
