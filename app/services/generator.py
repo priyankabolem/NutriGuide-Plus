@@ -1,369 +1,230 @@
 from typing import List, Tuple, Optional
+import re
 from ..models import NutritionProfile, Recommendation, RecipeCard
 
-# Nutrition database for different foods
-NUTRITION_DATA = {
-    "grilled chicken": {
-        "serving_grams": 150.0,
-        "calories": 280.0,
-        "macros": {"protein_g": 40.0, "carbs_g": 0.0, "fat_g": 12.0},
-        "recipes": [
-            RecipeCard(
-                title="Protein Power Bowl",
-                steps=[
-                    "Season chicken breast with herbs and spices",
-                    "Grill for 6-7 minutes each side until cooked through",
-                    "Prepare quinoa or brown rice as base",
-                    "Add steamed vegetables and sliced chicken",
-                    "Drizzle with lemon juice and olive oil"
-                ],
-                time_minutes=25,
-                cost_estimate_usd=6.50,
-                ingredients=["chicken breast", "quinoa", "mixed vegetables", "olive oil", "lemon"]
-            ),
-            RecipeCard(
-                title="Mediterranean Chicken Salad",
-                steps=[
-                    "Dice grilled chicken into bite-sized pieces",
-                    "Mix greens, tomatoes, cucumbers, and olives",
-                    "Add feta cheese and chicken",
-                    "Dress with olive oil and balsamic vinegar"
-                ],
-                time_minutes=15,
-                cost_estimate_usd=7.00,
-                ingredients=["chicken", "mixed greens", "feta cheese", "olives", "tomatoes"]
-            ),
-            RecipeCard(
-                title="Chicken Lettuce Wraps",
-                steps=[
-                    "Shred the grilled chicken",
-                    "Mix with diced vegetables and Asian sauce",
-                    "Serve in crisp lettuce cups",
-                    "Garnish with sesame seeds and green onions"
-                ],
-                time_minutes=10,
-                cost_estimate_usd=5.50,
-                ingredients=["chicken", "lettuce", "carrots", "bell peppers", "soy sauce"]
-            )
-        ]
-    },
-    "pizza": {
-        "serving_grams": 107.0,
-        "calories": 285.0,
-        "macros": {"protein_g": 12.0, "carbs_g": 36.0, "fat_g": 10.0},
-        "recipes": [
-            RecipeCard(
-                title="Veggie-Loaded Pizza",
-                steps=[
-                    "Start with whole wheat pizza dough",
-                    "Spread tomato sauce evenly",
-                    "Add mozzarella and vegetable toppings",
-                    "Bake at 450°F for 12-15 minutes"
-                ],
-                time_minutes=20,
-                cost_estimate_usd=8.00,
-                ingredients=["pizza dough", "tomato sauce", "mozzarella", "vegetables"]
-            ),
-            RecipeCard(
-                title="Pizza Salad Bowl",
-                steps=[
-                    "Chop leftover pizza into bite-sized pieces",
-                    "Toss with fresh arugula and spinach",
-                    "Add cherry tomatoes and fresh basil",
-                    "Drizzle with Italian dressing"
-                ],
-                time_minutes=10,
-                cost_estimate_usd=6.00,
-                ingredients=["pizza", "arugula", "spinach", "tomatoes", "Italian dressing"]
-            )
-        ]
-    },
-    "salmon": {
-        "serving_grams": 150.0,
-        "calories": 310.0,
-        "macros": {"protein_g": 35.0, "carbs_g": 0.0, "fat_g": 18.0},
-        "recipes": [
-            RecipeCard(
-                title="Lemon Herb Salmon",
-                steps=[
-                    "Season salmon with herbs, salt, and pepper",
-                    "Pan-sear skin-side down for 4 minutes",
-                    "Flip and cook for 3 more minutes",
-                    "Serve with lemon wedges and steamed vegetables"
-                ],
-                time_minutes=15,
-                cost_estimate_usd=12.00,
-                ingredients=["salmon fillet", "lemon", "herbs", "olive oil", "vegetables"]
-            ),
-            RecipeCard(
-                title="Salmon Poke Bowl",
-                steps=[
-                    "Cube salmon into bite-sized pieces",
-                    "Marinate in soy sauce and sesame oil",
-                    "Serve over sushi rice with avocado",
-                    "Top with seaweed and sesame seeds"
-                ],
-                time_minutes=20,
-                cost_estimate_usd=14.00,
-                ingredients=["salmon", "sushi rice", "avocado", "soy sauce", "seaweed"]
-            )
-        ]
-    },
-    "pasta": {
-        "serving_grams": 200.0,
-        "calories": 320.0,
-        "macros": {"protein_g": 12.0, "carbs_g": 62.0, "fat_g": 3.0},
-        "recipes": [
-            RecipeCard(
-                title="Primavera Pasta",
-                steps=[
-                    "Cook pasta according to package directions",
-                    "Sauté vegetables in olive oil",
-                    "Toss pasta with vegetables and garlic",
-                    "Finish with parmesan and fresh herbs"
-                ],
-                time_minutes=20,
-                cost_estimate_usd=6.00,
-                ingredients=["pasta", "mixed vegetables", "garlic", "olive oil", "parmesan"]
-            )
-        ]
-    },
-    "burger": {
-        "serving_grams": 200.0,
-        "calories": 450.0,
-        "macros": {"protein_g": 28.0, "carbs_g": 35.0, "fat_g": 22.0},
-        "recipes": [
-            RecipeCard(
-                title="Protein Style Burger",
-                steps=[
-                    "Wrap burger in lettuce instead of bun",
-                    "Add tomato, onion, and pickles",
-                    "Serve with side salad",
-                    "Use mustard instead of mayo for lower calories"
-                ],
-                time_minutes=5,
-                cost_estimate_usd=9.00,
-                ingredients=["burger patty", "lettuce", "tomatoes", "onions", "pickles"]
-            )
-        ]
-    },
-    "salad": {
-        "serving_grams": 200.0,
-        "calories": 150.0,
-        "macros": {"protein_g": 5.0, "carbs_g": 10.0, "fat_g": 10.0},
-        "recipes": [
-            RecipeCard(
-                title="Power Greens Salad",
-                steps=[
-                    "Mix spinach, kale, and arugula",
-                    "Add nuts, seeds, and dried fruit",
-                    "Top with grilled protein of choice",
-                    "Dress with vinaigrette"
-                ],
-                time_minutes=10,
-                cost_estimate_usd=8.00,
-                ingredients=["mixed greens", "nuts", "seeds", "dried fruit", "vinaigrette"]
-            )
-        ]
-    },
-    "eggs": {
-        "serving_grams": 100.0,
-        "calories": 155.0,
-        "macros": {"protein_g": 13.0, "carbs_g": 1.1, "fat_g": 11.0},
-        "recipes": [
-            RecipeCard(
-                title="Veggie Scrambled Eggs",
-                steps=[
-                    "Whisk eggs with a splash of milk",
-                    "Sauté vegetables in pan",
-                    "Pour eggs over vegetables",
-                    "Scramble until fluffy"
-                ],
-                time_minutes=10,
-                cost_estimate_usd=4.00,
-                ingredients=["eggs", "milk", "vegetables", "butter"]
-            )
-        ]
-    },
-    "soup": {
-        "serving_grams": 250.0,
-        "calories": 120.0,
-        "macros": {"protein_g": 5.0, "carbs_g": 18.0, "fat_g": 3.0},
-        "recipes": [
-            RecipeCard(
-                title="Hearty Vegetable Soup",
-                steps=[
-                    "Sauté onions and garlic",
-                    "Add vegetables and broth",
-                    "Simmer for 20 minutes",
-                    "Season to taste"
-                ],
-                time_minutes=30,
-                cost_estimate_usd=5.00,
-                ingredients=["vegetables", "broth", "onions", "garlic", "herbs"]
-            )
-        ]
-    },
-    "rice bowl": {
-        "serving_grams": 200.0,
-        "calories": 400.0,
-        "macros": {"protein_g": 12.0, "carbs_g": 68.0, "fat_g": 8.0},
-        "recipes": [
-            RecipeCard(
-                title="Asian Rice Bowl",
-                steps=[
-                    "Cook rice according to package",
-                    "Stir-fry vegetables and protein",
-                    "Place over rice",
-                    "Drizzle with sauce"
-                ],
-                time_minutes=25,
-                cost_estimate_usd=7.00,
-                ingredients=["rice", "vegetables", "protein", "soy sauce"]
-            )
-        ]
-    },
-    "sandwich": {
-        "serving_grams": 200.0,
-        "calories": 380.0,
-        "macros": {"protein_g": 22.0, "carbs_g": 40.0, "fat_g": 14.0},
-        "recipes": [
-            RecipeCard(
-                title="Gourmet Sandwich",
-                steps=[
-                    "Toast bread lightly",
-                    "Layer with proteins and vegetables",
-                    "Add condiments",
-                    "Cut diagonally and serve"
-                ],
-                time_minutes=10,
-                cost_estimate_usd=6.00,
-                ingredients=["bread", "turkey", "cheese", "lettuce", "tomato"]
-            )
-        ]
-    },
-    "tacos": {
-        "serving_grams": 200.0,
-        "calories": 420.0,
-        "macros": {"protein_g": 20.0, "carbs_g": 38.0, "fat_g": 22.0},
-        "recipes": [
-            RecipeCard(
-                title="Fresh Fish Tacos",
-                steps=[
-                    "Season and grill fish",
-                    "Warm tortillas",
-                    "Prepare fresh salsa and slaw",
-                    "Assemble with toppings"
-                ],
-                time_minutes=20,
-                cost_estimate_usd=8.00,
-                ingredients=["fish", "tortillas", "cabbage", "salsa", "lime"]
-            )
-        ]
-    },
-    "pancakes": {
-        "serving_grams": 150.0,
-        "calories": 350.0,
-        "macros": {"protein_g": 8.0, "carbs_g": 60.0, "fat_g": 10.0},
-        "recipes": [
-            RecipeCard(
-                title="Protein Pancakes",
-                steps=[
-                    "Mix pancake batter with protein powder",
-                    "Cook on griddle until bubbles form",
-                    "Flip and cook until golden",
-                    "Serve with fresh fruit"
-                ],
-                time_minutes=15,
-                cost_estimate_usd=5.00,
-                ingredients=["pancake mix", "protein powder", "eggs", "berries"]
-            )
-        ]
-    },
-    "fruit bowl": {
-        "serving_grams": 200.0,
-        "calories": 120.0,
-        "macros": {"protein_g": 2.0, "carbs_g": 30.0, "fat_g": 0.5},
-        "recipes": [
-            RecipeCard(
-                title="Tropical Fruit Bowl",
-                steps=[
-                    "Cut fresh fruits into bite-sized pieces",
-                    "Mix in a large bowl",
-                    "Add mint leaves",
-                    "Drizzle with honey if desired"
-                ],
-                time_minutes=10,
-                cost_estimate_usd=6.00,
-                ingredients=["pineapple", "mango", "berries", "mint", "honey"]
-            )
-        ]
+def calculate_dynamic_nutrition(food_name: str, serving_grams: float = None) -> dict:
+    """Calculate nutrition dynamically based on food name and type"""
+    
+    # Extract key components from food name
+    food_lower = food_name.lower()
+    
+    # Base nutrition values (will be modified based on food type)
+    base_calories = 200
+    base_protein = 15
+    base_carbs = 25
+    base_fat = 8
+    
+    # Serving size determination
+    if serving_grams is None:
+        if any(word in food_lower for word in ["soup", "smoothie", "juice", "shake"]):
+            serving_grams = 250  # Liquids
+        elif any(word in food_lower for word in ["salad", "vegetables", "fruits"]):
+            serving_grams = 200  # Light foods
+        elif any(word in food_lower for word in ["steak", "tenderloin", "chops"]):
+            serving_grams = 180  # Dense meats
+        else:
+            serving_grams = 150  # Default
+    
+    # Protein-rich foods
+    if any(word in food_lower for word in ["chicken", "turkey", "beef", "pork", "lamb", "fish", "salmon", "tuna", "shrimp", "eggs"]):
+        base_calories = 250
+        base_protein = 35
+        base_carbs = 2
+        base_fat = 12
+        
+        if "grilled" in food_lower or "baked" in food_lower:
+            base_fat -= 3
+        elif "fried" in food_lower:
+            base_fat += 8
+            base_calories += 100
+    
+    # Carb-heavy foods
+    elif any(word in food_lower for word in ["rice", "pasta", "bread", "potato", "quinoa", "noodles"]):
+        base_calories = 220
+        base_protein = 8
+        base_carbs = 45
+        base_fat = 2
+        
+        if "brown rice" in food_lower or "whole wheat" in food_lower:
+            base_protein += 2
+            base_carbs -= 5
+    
+    # Vegetables
+    elif any(word in food_lower for word in ["salad", "vegetables", "broccoli", "spinach", "carrots", "peppers"]):
+        base_calories = 80
+        base_protein = 3
+        base_carbs = 15
+        base_fat = 2
+        
+        if "salad" in food_lower:
+            base_calories += 70  # Dressing
+            base_fat += 8
+    
+    # Fruits
+    elif any(word in food_lower for word in ["fruit", "apple", "banana", "berries", "mango", "watermelon"]):
+        base_calories = 120
+        base_protein = 2
+        base_carbs = 30
+        base_fat = 0.5
+    
+    # Complex dishes
+    elif any(word in food_lower for word in ["pizza", "burger", "tacos", "sandwich", "burrito"]):
+        base_calories = 450
+        base_protein = 22
+        base_carbs = 45
+        base_fat = 20
+        
+        if "veggie" in food_lower or "vegetarian" in food_lower:
+            base_protein -= 10
+            base_calories -= 50
+    
+    # Desserts
+    elif any(word in food_lower for word in ["cake", "pie", "cookies", "ice cream", "brownie"]):
+        base_calories = 380
+        base_protein = 5
+        base_carbs = 55
+        base_fat = 16
+    
+    # Breakfast items
+    elif any(word in food_lower for word in ["pancakes", "waffles", "french toast", "oatmeal"]):
+        base_calories = 320
+        base_protein = 10
+        base_carbs = 50
+        base_fat = 10
+    
+    # Beverages
+    elif any(word in food_lower for word in ["smoothie", "juice", "shake", "coffee"]):
+        base_calories = 150
+        base_protein = 5
+        base_carbs = 25
+        base_fat = 3
+        
+        if "protein shake" in food_lower:
+            base_protein = 25
+            base_calories = 220
+    
+    # Adjust for modifiers
+    if "organic" in food_lower:
+        base_calories *= 0.95
+    if "gourmet" in food_lower or "special" in food_lower:
+        base_calories *= 1.1
+        base_fat *= 1.2
+    
+    # Scale by serving size
+    scale_factor = serving_grams / 150.0
+    
+    return {
+        "serving_grams": serving_grams,
+        "calories": round(base_calories * scale_factor),
+        "protein_g": round(base_protein * scale_factor, 1),
+        "carbs_g": round(base_carbs * scale_factor, 1),
+        "fat_g": round(base_fat * scale_factor, 1)
     }
-}
+
+def generate_dynamic_recipes(food_name: str, nutrition_info: dict) -> List[RecipeCard]:
+    """Generate contextual recipes based on the detected food"""
+    
+    food_lower = food_name.lower()
+    recipes = []
+    
+    # Extract main ingredient
+    main_ingredient = food_name.split()[-1] if food_name else "ingredient"
+    
+    # Healthy transformation recipe
+    healthy_recipe = RecipeCard(
+        title=f"Healthier {food_name.title()}",
+        steps=[
+            f"Start with fresh, high-quality {main_ingredient}",
+            "Use minimal oil or opt for air-frying/grilling",
+            "Add plenty of vegetables for extra nutrients",
+            "Season with herbs and spices instead of excess salt",
+            "Serve with a side of whole grains or salad"
+        ],
+        time_minutes=25,
+        cost_estimate_usd=round(8 + len(food_name) * 0.2, 2),
+        ingredients=[main_ingredient, "vegetables", "olive oil", "herbs", "whole grains"]
+    )
+    recipes.append(healthy_recipe)
+    
+    # Quick version recipe
+    if nutrition_info["calories"] > 300:
+        quick_recipe = RecipeCard(
+            title=f"Quick {food_name.title()} Bowl",
+            steps=[
+                f"Prepare base of quinoa or brown rice",
+                f"Add pre-cooked or leftover {main_ingredient}",
+                "Top with fresh vegetables and greens",
+                "Drizzle with your favorite healthy sauce",
+                "Garnish with seeds or nuts for crunch"
+            ],
+            time_minutes=15,
+            cost_estimate_usd=round(6 + len(food_name) * 0.15, 2),
+            ingredients=[main_ingredient, "quinoa", "mixed vegetables", "sauce", "nuts/seeds"]
+        )
+        recipes.append(quick_recipe)
+    
+    # Meal prep version
+    meal_prep_recipe = RecipeCard(
+        title=f"Meal Prep {food_name.title()}",
+        steps=[
+            f"Batch cook {main_ingredient} for the week",
+            "Portion into meal prep containers",
+            "Add different vegetables to each container",
+            "Prepare various sauces for variety",
+            "Store in refrigerator for up to 5 days"
+        ],
+        time_minutes=45,
+        cost_estimate_usd=round(5 * (5 + len(food_name) * 0.1), 2),
+        ingredients=[f"{main_ingredient} (bulk)", "variety of vegetables", "meal prep containers", "sauces"]
+    )
+    recipes.append(meal_prep_recipe)
+    
+    return recipes[:3]
 
 def generate_profile_and_recipes(topk: List[Tuple[str, float]], notes: Optional[str] = None) -> Recommendation:
-    """Generate nutrition profile and recipes based on identified food"""
-    main_label = topk[0][0].lower()
+    """Generate nutrition profile and recipes for any detected food"""
     
-    # Get nutrition data or use defaults
-    if main_label in NUTRITION_DATA:
-        data = NUTRITION_DATA[main_label]
-        prof = NutritionProfile(
-            name=main_label,
-            serving_grams=data["serving_grams"],
-            calories=data["calories"],
-            macros=data["macros"],
-            micronutrients={}
-        )
-        recipes = data["recipes"]
-    else:
-        # Default nutrition profile for unrecognized foods
-        prof = NutritionProfile(
-            name=main_label,
-            serving_grams=150.0,
-            calories=200.0,
-            macros={"protein_g": 15.0, "carbs_g": 25.0, "fat_g": 8.0},
-            micronutrients={}
-        )
-        # Generic recipes
-        recipes = [
-            RecipeCard(
-                title=f"Healthy {main_label.title()} Bowl",
-                steps=[
-                    f"Prepare {main_label} according to preference",
-                    "Add to a bowl with mixed greens",
-                    "Include whole grains for balance",
-                    "Top with a healthy dressing"
-                ],
-                time_minutes=15,
-                cost_estimate_usd=7.00,
-                ingredients=[main_label, "mixed greens", "whole grains", "dressing"]
-            ),
-            RecipeCard(
-                title=f"{main_label.title()} Salad",
-                steps=[
-                    f"Dice or slice {main_label}",
-                    "Mix with fresh vegetables",
-                    "Add a protein source",
-                    "Dress lightly with vinaigrette"
-                ],
-                time_minutes=10,
-                cost_estimate_usd=6.00,
-                ingredients=[main_label, "vegetables", "protein", "vinaigrette"]
-            ),
-            RecipeCard(
-                title=f"Quick {main_label.title()} Wrap",
-                steps=[
-                    f"Place {main_label} in whole wheat tortilla",
-                    "Add fresh vegetables and greens",
-                    "Include a healthy sauce",
-                    "Roll tightly and serve"
-                ],
-                time_minutes=8,
-                cost_estimate_usd=5.00,
-                ingredients=[main_label, "tortilla", "vegetables", "sauce"]
-            )
-        ]
+    # Get the primary detected food
+    main_food = topk[0][0]
+    confidence = topk[0][1]
     
-    # Add only 3 recipes max
-    return Recommendation(profile=prof, recipes=recipes[:3])
+    # Calculate dynamic nutrition
+    nutrition_info = calculate_dynamic_nutrition(main_food)
+    
+    # Create nutrition profile
+    prof = NutritionProfile(
+        name=main_food,
+        serving_grams=nutrition_info["serving_grams"],
+        calories=float(nutrition_info["calories"]),
+        macros={
+            "protein_g": nutrition_info["protein_g"],
+            "carbs_g": nutrition_info["carbs_g"],
+            "fat_g": nutrition_info["fat_g"]
+        },
+        micronutrients={
+            "fiber_g": round(nutrition_info["carbs_g"] * 0.1, 1),
+            "sugar_g": round(nutrition_info["carbs_g"] * 0.3, 1),
+            "sodium_mg": round(nutrition_info["calories"] * 1.5),
+            "cholesterol_mg": round(nutrition_info["fat_g"] * 10) if "meat" in main_food.lower() else 0
+        }
+    )
+    
+    # Generate contextual recipes
+    recipes = generate_dynamic_recipes(main_food, nutrition_info)
+    
+    # Adjust based on notes
+    if notes:
+        notes_lower = notes.lower()
+        if "low carb" in notes_lower or "keto" in notes_lower:
+            prof.macros["carbs_g"] *= 0.5
+            prof.calories -= prof.macros["carbs_g"] * 2
+        elif "high protein" in notes_lower:
+            prof.macros["protein_g"] *= 1.5
+            prof.calories += prof.macros["protein_g"] * 2
+        elif "vegan" in notes_lower or "vegetarian" in notes_lower:
+            if any(meat in main_food.lower() for meat in ["chicken", "beef", "pork", "fish", "turkey"]):
+                main_food = main_food.replace("chicken", "tofu").replace("beef", "tempeh").replace("pork", "seitan")
+                prof.name = main_food
+                prof.micronutrients["cholesterol_mg"] = 0
+    
+    return Recommendation(profile=prof, recipes=recipes)

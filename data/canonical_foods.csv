@@ -1,33 +1,81 @@
 name,serving_grams,calories,protein_g,carbs_g,fat_g
-grilled chicken,150,280,40,0,12
-chicken breast,150,284,53.4,0,6.2
-rice (cooked),150,195,4,42,0.4
-mixed green salad,100,20,2,3,0
-banana,118,105,1.3,27,0.3
-pizza (cheese slice),107,285,12,36,10
-cheese pizza,107,272,10.6,33.8,10.5
-salmon,150,310,35,0,18
-grilled fish,150,220,42,0,5
-pasta,200,320,12,62,3
-spaghetti,200,316,11,61.8,1.8
-burger,200,450,28,35,22
-beef burger,200,563,30,40,33
-salad,200,150,5,10,10
-green salad,100,33,2.9,6.3,0.6
-sushi,200,300,12,50,5
-japanese food,200,320,15,48,8
-steak,200,500,48,0,34
-beef,150,396,36,0,27
-sandwich,200,380,22,40,14
-turkey sandwich,200,324,24,29,12
-rice bowl,200,400,12,68,8
-tacos,200,420,20,38,22
-mexican food,200,450,18,45,24
-soup,250,180,8,22,6
-vegetable soup,250,120,5,18,3
-eggs,100,155,13,1.1,11
-scrambled eggs,100,148,10,2,11
-pancakes,150,350,8,60,10
-breakfast,200,400,15,55,15
-fruit bowl,200,120,2,30,0.5
-mixed fruit,200,130,2,33,0.4
+grilled chicken breast,150,280,40,0,12
+roasted turkey,150,276,41,0,11
+baked salmon,150,310,35,0,18
+grilled tuna steak,150,290,45,0,11
+beef tenderloin,180,420,36,0,30
+pork chops,180,380,32,0,27
+lamb kebab,150,340,28,2,25
+grilled shrimp,150,140,30,2,1.5
+pan-seared scallops,150,160,20,8,2
+tofu stir-fry,200,180,16,10,11
+tempeh bowl,200,320,31,16,18
+black bean burger,150,270,15,35,9
+chickpea curry,250,320,12,45,10
+lentil soup,250,230,18,40,0.5
+fried eggs,100,190,13,1,15
+scrambled eggs with cheese,120,240,16,3,18
+eggs benedict,200,420,20,30,28
+spanish omelette,180,320,18,25,18
+white rice,150,195,4,42,0.4
+brown rice,150,216,5,45,2
+wild rice,150,166,7,35,0.6
+quinoa bowl,200,320,12,56,5
+pasta primavera,250,380,14,65,8
+spaghetti carbonara,250,520,18,48,28
+fettuccine alfredo,250,580,16,50,35
+penne arrabbiata,250,420,14,68,10
+whole wheat bread,60,140,6,26,2
+sourdough toast,60,150,5,28,1
+naan bread,90,320,9,53,9
+pita bread,60,165,5.5,33,0.7
+french baguette,60,160,6,32,0.5
+sweet potato,150,130,2,30,0.1
+mashed potatoes,200,240,4,35,9
+roasted potatoes,150,180,3,38,2
+french fries,150,365,4,48,17
+mixed green salad,200,150,5,10,10
+caesar salad,200,360,10,20,28
+greek salad,200,280,8,15,22
+caprese salad,200,320,16,12,25
+roasted brussels sprouts,150,56,4,11,0.5
+steamed broccoli,150,55,4.5,11,0.5
+grilled asparagus,150,40,4,8,0.5
+sauteed spinach,150,41,5,6.8,0.5
+fresh fruit salad,200,120,2,30,0.5
+tropical fruit bowl,200,140,2,35,0.5
+berries and cream,150,180,3,22,9
+sliced watermelon,200,60,1.2,15,0.3
+margherita pizza,107,285,12,36,10
+pepperoni pizza,107,320,13,35,14
+vegetarian pizza,107,270,11,38,9
+hawaiian pizza,107,290,14,36,10
+classic cheeseburger,200,450,28,35,22
+bacon burger,220,580,32,36,35
+veggie burger,200,350,18,42,14
+turkey burger,200,380,30,28,18
+fish tacos,200,360,24,32,16
+beef tacos,200,420,20,38,22
+chicken quesadilla,200,440,28,36,20
+burrito bowl,300,520,25,65,18
+pad thai,250,380,12,60,12
+chicken teriyaki,200,340,30,28,12
+sushi platter,200,350,20,50,8
+poke bowl,300,420,30,55,10
+ramen soup,400,380,15,50,14
+tom yum soup,300,180,12,20,6
+minestrone soup,300,220,8,35,4
+chocolate cake,100,380,5,55,16
+cheesecake,125,450,8,35,32
+tiramisu,120,420,6,40,28
+pancakes with syrup,150,350,8,60,10
+french toast,150,380,12,45,16
+waffles with berries,150,340,8,55,10
+avocado toast,150,280,8,24,18
+breakfast burrito,250,480,22,48,22
+granola parfait,200,380,10,65,10
+oatmeal with fruits,250,320,10,58,6
+green smoothie,350,180,5,35,2
+protein shake,350,280,30,28,5
+fresh orange juice,250,110,2,26,0.5
+iced coffee,350,120,1,20,4
