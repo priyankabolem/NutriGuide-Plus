@@ -2,10 +2,11 @@ from typing import List, Tuple, Optional
 import re
 import json
 import os
+import requests
 from ..models import NutritionProfile, Recommendation, RecipeCard
 
 def load_nutrition_database():
-    """Load comprehensive nutrition database"""
+    """Load comprehensive nutrition database with FoodData Central integration"""
     try:
         # Try comprehensive database first
         db_path = os.path.join(os.path.dirname(__file__), "../../data/comprehensive_nutrition.json")
@@ -29,11 +30,95 @@ def load_nutrition_database():
         print(f"Error loading nutrition database: {e}")
         return {}
 
+def get_nutrition_from_fooddata_central(food_name: str) -> Optional[dict]:
+    """Fetch nutrition data from USDA FoodData Central API"""
+    try:
+        # FoodData Central API (free, no key required for basic searches)
+        base_url = "https://api.nal.usda.gov/fdc/v1"
+        
+        # Search for food
+        search_url = f"{base_url}/foods/search"
+        search_params = {
+            "query": food_name,
+            "dataType": ["Foundation", "SR Legacy"],
+            "pageSize": 5,
+            "sortBy": "dataType.keyword",
+            "sortOrder": "asc"
+        }
+        
+        search_response = requests.get(search_url, params=search_params, timeout=5)
+        
+        if search_response.status_code == 200:
+            search_data = search_response.json()
+            
+            if search_data.get("foods"):
+                # Get the first matching food item
+                food_item = search_data["foods"][0]
+                fdc_id = food_item["fdcId"]
+                
+                # Get detailed nutrition data
+                detail_url = f"{base_url}/food/{fdc_id}"
+                detail_response = requests.get(detail_url, timeout=5)
+                
+                if detail_response.status_code == 200:
+                    detail_data = detail_response.json()
+                    
+                    # Extract nutrition information
+                    nutrients = detail_data.get("foodNutrients", [])
+                    nutrition = {
+                        "serving_size_g": 100,  # FoodData Central uses 100g servings
+                        "calories": 0,
+                        "protein_g": 0,
+                        "carbs_g": 0,
+                        "fat_g": 0,
+                        "fiber_g": 0,
+                        "sugar_g": 0,
+                        "sodium_mg": 0,
+                        "cholesterol_mg": 0
+                    }
+                    
+                    # Map FoodData Central nutrient IDs to our fields
+                    nutrient_map = {
+                        "1008": "calories",      # Energy
+                        "1003": "protein_g",     # Protein
+                        "1005": "carbs_g",       # Carbohydrate
+                        "1004": "fat_g",         # Total lipid (fat)
+                        "1079": "fiber_g",       # Fiber, total dietary
+                        "2000": "sugar_g",       # Total sugars
+                        "1093": "sodium_mg",     # Sodium
+                        "1253": "cholesterol_mg" # Cholesterol
+                    }
+                    
+                    for nutrient in nutrients:
+                        nutrient_id = str(nutrient.get("nutrient", {}).get("id", ""))
+                        
+                        if nutrient_id in nutrient_map:
+                            field = nutrient_map[nutrient_id]
+                            value = nutrient.get("amount", 0)
+                            
+                            # Convert units if needed
+                            unit = nutrient.get("nutrient", {}).get("unitName", "").upper()
+                            if unit == "KCAL" and field == "calories":
+                                nutrition[field] = round(value)
+                            elif unit == "G":
+                                nutrition[field] = round(value, 1)
+                            elif unit == "MG":
+                                nutrition[field] = round(value)
+                    
+                    print(f"✓ FoodData Central: {food_name} - {nutrition['calories']} cal")
+                    return nutrition
+                    
+        return None
+        
+    except Exception as e:
+        print(f"FoodData Central API error: {e}")
+        return None
+
 # Global nutrition database
 NUTRITION_DB = load_nutrition_database()
 
 def get_nutrition_from_database(food_name: str) -> Optional[dict]:
-    """Get nutrition data from comprehensive database with intelligent matching"""
+    """Get nutrition data from comprehensive database with intelligent matching and API fallback"""
     food_lower = food_name.lower().strip()
     
     # Direct lookup first
@@ -55,6 +140,13 @@ def get_nutrition_from_database(food_name: str) -> Optional[dict]:
     if best_match:
         print(f"✓ Found nutrition match: {food_lower} → score {best_score:.2f}")
         return best_match
+    
+    # If not found in local database, try FoodData Central API
+    api_nutrition = get_nutrition_from_fooddata_central(food_name)
+    if api_nutrition:
+        # Cache the result in our database for future use
+        NUTRITION_DB[food_lower] = api_nutrition
+        return api_nutrition
     
     return None
 

@@ -5,7 +5,8 @@ from PIL import Image
 from typing import List, Tuple, Optional
 import json
 import numpy as np
-from .food_api import get_food_from_apis, get_enhanced_food_classification
+from .food_api import get_enhanced_food_classification
+from .food_recognizer import get_free_food_recognition
 
 class SmartFoodRecognizer:
     def __init__(self):
@@ -345,18 +346,17 @@ def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
         img_bytes = base64.b64decode(image_b64)
         img = Image.open(io.BytesIO(img_bytes))
         
-        # First, try external API for accurate recognition
-        api_result = get_food_from_apis(image_b64)
+        # Use free food recognition with advanced algorithms
+        primary_food, confidence = get_free_food_recognition(image_b64, img)
         
-        if api_result and api_result[1] > 0.7:  # High confidence from API
-            primary_food, api_confidence = api_result
-            print(f"✓ API Recognition: {primary_food} ({api_confidence:.2f})")
+        if confidence > 0.6:
+            print(f"✓ Advanced Recognition: {primary_food} ({confidence:.2f})")
             
-            # Generate related foods based on API result
+            # Generate related foods based on result
             related_foods = generate_related_foods(primary_food)
             
             return [
-                (primary_food, api_confidence),
+                (primary_food, confidence),
                 (related_foods[0], 0.15),
                 (related_foods[1], 0.05)
             ][:k]

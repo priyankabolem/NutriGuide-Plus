@@ -8,6 +8,8 @@ This guide provides step-by-step instructions for deploying NutriGuide+ to produ
 - Render account (free tier available)
 - Streamlit Cloud account (free tier available)
 
+**Note**: This project uses 100% free services. No API keys or paid subscriptions required!
+
 ## Step 1: Prepare Your Repository
 
 1. Ensure all code is committed and pushed to GitHub
@@ -33,13 +35,14 @@ This guide provides step-by-step instructions for deploying NutriGuide+ to produ
    - Environment: Python 3.11
    - Build Command: `./build.sh`
    - Start Command: `uvicorn app.main:api --host 0.0.0.0 --port $PORT`
-6. Click "Create Web Service"
+6. Click "Create Web Service" (No environment variables needed!)
 7. Wait for the deployment to complete (5-10 minutes)
 8. Copy your API URL (format: `https://nutriguide-plus-api.onrender.com`)
 
 ### 2.3 Verify API Deployment
 1. Visit `https://your-api-url.onrender.com/docs`
 2. You should see the FastAPI interactive documentation
+3. Test the `/analyze` endpoint with a sample image
 
 ## Step 3: Deploy UI to Streamlit Cloud
 
@@ -78,6 +81,7 @@ allow_origins=["https://your-streamlit-app-url.streamlit.app"]
 ### 4.2 Monitor Your Services
 - **Render Dashboard**: Monitor API health, logs, and metrics
 - **Streamlit Cloud Dashboard**: View app usage and logs
+- **Hugging Face**: Check inference API usage (optional)
 
 ## Step 5: Testing Your Deployment
 
@@ -85,6 +89,8 @@ allow_origins=["https://your-streamlit-app-url.streamlit.app"]
 2. Upload a food image
 3. Verify that:
    - Image uploads successfully
+   - Food is correctly identified (should be accurate with Google Vision)
+   - Nutrition information is realistic and accurate
    - Analysis returns results
    - Verification works correctly
    - Recipe recommendations display

@@ -29,23 +29,168 @@ class EnhancedFoodRecognizer:
             "dessert": ["sweet", "colorful", "sugar", "treat"]
         }
     
-    def analyze_with_imagenet(self, image_b64: str) -> Optional[str]:
-        """Use free ImageNet-based classification"""
+    def analyze_with_google_vision(self, image_b64: str) -> Optional[str]:
+        """Use Google Vision API for accurate food detection"""
         try:
-            # This is a conceptual implementation - in reality, you'd use
-            # a free computer vision service or local model
+            # Check for API key
+            api_key = os.getenv('GOOGLE_VISION_API_KEY')
+            if not api_key:
+                print("No Google Vision API key found")
+                return None
             
-            # For demo purposes, return None to use visual analysis
-            # In production, integrate with free services like:
-            # - Hugging Face Inference API (free tier)
-            # - Google Vision API (free tier)
-            # - Microsoft Computer Vision (free tier)
+            # Google Vision API endpoint
+            url = f"https://vision.googleapis.com/v1/images:annotate?key={api_key}"
             
+            # Request payload for label detection
+            payload = {
+                "requests": [
+                    {
+                        "image": {
+                            "content": image_b64
+                        },
+                        "features": [
+                            {
+                                "type": "LABEL_DETECTION",
+                                "maxResults": 20
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            response = requests.post(url, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                if "responses" in result and result["responses"]:
+                    labels = result["responses"][0].get("labelAnnotations", [])
+                    
+                    # Extract food-related labels
+                    food_labels = []
+                    food_keywords = [
+                        "food", "dish", "cuisine", "meal", "ingredient", "recipe",
+                        "pizza", "burger", "salad", "chicken", "beef", "fish", "rice", 
+                        "pasta", "bread", "fruit", "vegetable", "meat", "seafood",
+                        "sandwich", "soup", "cake", "dessert", "breakfast", "lunch", "dinner"
+                    ]
+                    
+                    for label in labels:
+                        description = label.get("description", "").lower()
+                        score = label.get("score", 0)
+                        
+                        # Check if label is food-related
+                        if any(keyword in description for keyword in food_keywords):
+                            food_labels.append((description, score))
+                    
+                    # Sort by confidence and return best food match
+                    food_labels.sort(key=lambda x: x[1], reverse=True)
+                    
+                    if food_labels:
+                        best_food = food_labels[0][0]
+                        confidence = food_labels[0][1]
+                        
+                        # Map generic labels to specific food names
+                        mapped_food = self.map_vision_label_to_food(best_food)
+                        print(f"✓ Google Vision: {mapped_food} (confidence: {confidence:.2f})")
+                        return mapped_food
+                    
             return None
             
         except Exception as e:
-            print(f"ImageNet analysis error: {e}")
+            print(f"Google Vision API error: {e}")
             return None
+    
+    def map_vision_label_to_food(self, label: str) -> str:
+        """Map Google Vision labels to specific food names"""
+        label_lower = label.lower()
+        
+        # Comprehensive mappings for vision labels to standardized food names
+        mappings = {
+            # Main dishes
+            "pizza": "pizza",
+            "hamburger": "burger", 
+            "cheeseburger": "burger",
+            "sandwich": "sandwich",
+            "hot dog": "hot dog",
+            "taco": "tacos",
+            "burrito": "burrito",
+            
+            # Proteins
+            "chicken": "grilled chicken breast",
+            "fried chicken": "fried chicken",
+            "beef": "grilled steak",
+            "steak": "grilled steak",
+            "pork": "pork chops",
+            "fish": "grilled fish",
+            "salmon": "grilled salmon",
+            "tuna": "tuna",
+            "shrimp": "shrimp",
+            "turkey": "turkey breast",
+            "eggs": "scrambled eggs",
+            
+            # Grains & Starches
+            "rice": "white rice",
+            "fried rice": "fried rice",
+            "pasta": "pasta with sauce",
+            "spaghetti": "spaghetti",
+            "noodles": "noodles",
+            "bread": "bread",
+            "toast": "toast",
+            "potato": "baked potato",
+            "french fries": "french fries",
+            "quinoa": "quinoa",
+            
+            # Vegetables
+            "salad": "green salad",
+            "caesar salad": "caesar salad",
+            "vegetable": "cooked vegetables",
+            "broccoli": "steamed broccoli",
+            "carrot": "carrots",
+            "spinach": "spinach",
+            "tomato": "tomato",
+            "corn": "corn",
+            "green beans": "green beans",
+            
+            # Fruits
+            "fruit": "mixed fruit",
+            "apple": "apple",
+            "banana": "banana",
+            "orange": "orange",
+            "strawberry": "strawberries",
+            "grapes": "grapes",
+            "watermelon": "watermelon",
+            "mango": "mango",
+            
+            # Soups & Liquids
+            "soup": "vegetable soup",
+            "tomato soup": "tomato soup",
+            "chicken soup": "chicken soup",
+            "smoothie": "fruit smoothie",
+            "juice": "orange juice",
+            
+            # Desserts
+            "cake": "chocolate cake",
+            "ice cream": "vanilla ice cream",
+            "cookie": "chocolate chip cookies",
+            "pie": "apple pie",
+            "brownie": "chocolate brownie",
+            
+            # Breakfast items
+            "pancakes": "pancakes",
+            "waffles": "waffles",
+            "oatmeal": "oatmeal",
+            "cereal": "cereal",
+            "yogurt": "greek yogurt"
+        }
+        
+        # Check direct mappings first
+        for key, value in mappings.items():
+            if key in label_lower:
+                return value
+        
+        # Fallback to original label with cleanup
+        return re.sub(r'[^\w\s]', '', label).strip() or "food item"
     
     def classify_by_common_patterns(self, visual_features: Dict) -> str:
         """Enhanced pattern-based food classification"""
@@ -124,13 +269,13 @@ class EnhancedFoodRecognizer:
 enhanced_recognizer = EnhancedFoodRecognizer()
 
 def get_food_from_apis(image_b64: str) -> Optional[Tuple[str, float]]:
-    """Enhanced food recognition using multiple approaches"""
+    """Enhanced food recognition using Google Vision API"""
     
-    # Try free computer vision service (conceptual - replace with actual free API)
-    imagenet_result = enhanced_recognizer.analyze_with_imagenet(image_b64)
+    # Try Google Vision API for accurate food detection
+    vision_result = enhanced_recognizer.analyze_with_google_vision(image_b64)
     
-    if imagenet_result:
-        return (imagenet_result, 0.85)
+    if vision_result:
+        return (vision_result, 0.90)
     
     # If no API available, use None to trigger visual analysis
     return None
