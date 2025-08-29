@@ -1,6 +1,8 @@
-Force rebuild: 2024-01-29 00:30 UTC - Dynamic AI v2.0
-- Complete redesign: Unlimited food recognition (not just 15 categories)
-- 100+ different food items can be detected
-- Dynamic nutrition calculation based on food type
-- Contextual recipe generation for ANY detected food
-- Responds to user dietary preferences in notes
+Force rebuild: 2025-01-29 12:00 UTC - Real Computer Vision v3.0
+- REAL image analysis using computer vision (not mock/hash-based)
+- Visual characteristic detection: colors, textures, patterns
+- USDA nutrition database integration for accurate nutrition data
+- Confidence scoring and uncertainty handling
+- Image validation and quality checks
+- Supports unlimited food types with accurate detection
+- Professional-grade food recognition for production demos

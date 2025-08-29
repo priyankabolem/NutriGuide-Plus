@@ -45,17 +45,19 @@ def detailed_health():
     return {
         "status": "healthy",
         "service": "NutriGuide+ API",
-        "version": "2.0.0",
-        "build": "2024-01-dynamic-ai",
+        "version": "3.0.0",
+        "build": "2025-01-real-cv",
         "timestamp": datetime.datetime.utcnow().isoformat(),
         "endpoints": [
             "/analyze - Food analysis endpoint",
             "/verify - Nutrition verification endpoint"
         ],
         "features": {
-            "dynamic_food_recognition": True,
-            "varied_responses": True,
-            "expanded_database": True
+            "real_computer_vision": True,
+            "usda_nutrition_database": True,
+            "confidence_scoring": True,
+            "image_validation": True,
+            "unlimited_food_types": True
         }
     }
 

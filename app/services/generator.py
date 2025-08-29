@@ -1,11 +1,70 @@
 from typing import List, Tuple, Optional
 import re
+import json
+import os
 from ..models import NutritionProfile, Recommendation, RecipeCard
 
-def calculate_dynamic_nutrition(food_name: str, serving_grams: float = None) -> dict:
-    """Calculate nutrition dynamically based on food name and type"""
+def load_nutrition_database():
+    """Load USDA nutrition database"""
+    try:
+        db_path = os.path.join(os.path.dirname(__file__), "../../data/usda_nutrition.json")
+        with open(db_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading nutrition database: {e}")
+        return {}
+
+# Global nutrition database
+NUTRITION_DB = load_nutrition_database()
+
+def get_nutrition_from_database(food_name: str) -> Optional[dict]:
+    """Get nutrition data from USDA database"""
+    food_lower = food_name.lower().strip()
     
-    # Extract key components from food name
+    # Direct lookup first
+    if food_lower in NUTRITION_DB:
+        return NUTRITION_DB[food_lower]
+    
+    # Fuzzy matching for similar foods
+    for db_food, data in NUTRITION_DB.items():
+        # Check if any word from the detected food matches database entries
+        food_words = food_lower.split()
+        db_words = db_food.split()
+        
+        # If any significant word matches, use that entry
+        for word in food_words:
+            if len(word) > 3 and word in db_words:
+                return data
+    
+    return None
+
+def calculate_dynamic_nutrition(food_name: str, serving_grams: float = None) -> dict:
+    """Calculate nutrition using real USDA database with fallback estimation"""
+    
+    # Try to get from database first
+    db_nutrition = get_nutrition_from_database(food_name)
+    
+    if db_nutrition:
+        # Use database values
+        base_data = db_nutrition.copy()
+        target_serving = serving_grams or base_data["serving_size_g"]
+        
+        # Scale nutrition based on serving size
+        scale_factor = target_serving / base_data["serving_size_g"]
+        
+        return {
+            "serving_grams": target_serving,
+            "calories": round(base_data["calories"] * scale_factor),
+            "protein_g": round(base_data["protein_g"] * scale_factor, 1),
+            "carbs_g": round(base_data["carbs_g"] * scale_factor, 1),
+            "fat_g": round(base_data["fat_g"] * scale_factor, 1),
+            "fiber_g": round(base_data["fiber_g"] * scale_factor, 1),
+            "sugar_g": round(base_data["sugar_g"] * scale_factor, 1),
+            "sodium_mg": round(base_data["sodium_mg"] * scale_factor),
+            "cholesterol_mg": round(base_data["cholesterol_mg"] * scale_factor)
+        }
+    
+    # Fallback estimation for unknown foods
     food_lower = food_name.lower()
     
     # Base nutrition values (will be modified based on food type)
@@ -13,6 +72,10 @@ def calculate_dynamic_nutrition(food_name: str, serving_grams: float = None) -> 
     base_protein = 15
     base_carbs = 25
     base_fat = 8
+    base_fiber = 2
+    base_sugar = 5
+    base_sodium = 250
+    base_cholesterol = 30
     
     # Serving size determination
     if serving_grams is None:
@@ -26,11 +89,15 @@ def calculate_dynamic_nutrition(food_name: str, serving_grams: float = None) -> 
             serving_grams = 150  # Default
     
     # Protein-rich foods
-    if any(word in food_lower for word in ["chicken", "turkey", "beef", "pork", "lamb", "fish", "salmon", "tuna", "shrimp", "eggs"]):
-        base_calories = 250
+    if any(word in food_lower for word in ["chicken", "turkey", "beef", "pork", "lamb", "fish", "salmon", "tuna", "shrimp", "eggs", "meat"]):
+        base_calories = 280
         base_protein = 35
         base_carbs = 2
         base_fat = 12
+        base_fiber = 0
+        base_sugar = 0
+        base_sodium = 80
+        base_cholesterol = 100
         
         if "grilled" in food_lower or "baked" in food_lower:
             base_fat -= 3
@@ -40,75 +107,74 @@ def calculate_dynamic_nutrition(food_name: str, serving_grams: float = None) -> 
     
     # Carb-heavy foods
     elif any(word in food_lower for word in ["rice", "pasta", "bread", "potato", "quinoa", "noodles"]):
-        base_calories = 220
-        base_protein = 8
-        base_carbs = 45
-        base_fat = 2
-        
-        if "brown rice" in food_lower or "whole wheat" in food_lower:
-            base_protein += 2
-            base_carbs -= 5
+        base_calories = 210
+        base_protein = 6
+        base_carbs = 43
+        base_fat = 1
+        base_fiber = 2
+        base_sugar = 1
+        base_sodium = 5
+        base_cholesterol = 0
     
     # Vegetables
-    elif any(word in food_lower for word in ["salad", "vegetables", "broccoli", "spinach", "carrots", "peppers"]):
-        base_calories = 80
+    elif any(word in food_lower for word in ["salad", "vegetable", "broccoli", "spinach", "carrots", "peppers", "green"]):
+        base_calories = 50
         base_protein = 3
-        base_carbs = 15
-        base_fat = 2
+        base_carbs = 10
+        base_fat = 0.5
+        base_fiber = 4
+        base_sugar = 6
+        base_sodium = 30
+        base_cholesterol = 0
         
         if "salad" in food_lower:
-            base_calories += 70  # Dressing
+            base_calories += 80  # Dressing
             base_fat += 8
+            base_sodium += 200
     
     # Fruits
-    elif any(word in food_lower for word in ["fruit", "apple", "banana", "berries", "mango", "watermelon"]):
-        base_calories = 120
-        base_protein = 2
-        base_carbs = 30
-        base_fat = 0.5
+    elif any(word in food_lower for word in ["fruit", "apple", "banana", "berries", "mango", "watermelon", "strawberries"]):
+        base_calories = 80
+        base_protein = 1
+        base_carbs = 20
+        base_fat = 0.3
+        base_fiber = 3
+        base_sugar = 15
+        base_sodium = 2
+        base_cholesterol = 0
     
     # Complex dishes
     elif any(word in food_lower for word in ["pizza", "burger", "tacos", "sandwich", "burrito"]):
-        base_calories = 450
-        base_protein = 22
-        base_carbs = 45
-        base_fat = 20
-        
-        if "veggie" in food_lower or "vegetarian" in food_lower:
-            base_protein -= 10
-            base_calories -= 50
+        base_calories = 350
+        base_protein = 18
+        base_carbs = 40
+        base_fat = 15
+        base_fiber = 3
+        base_sugar = 4
+        base_sodium = 600
+        base_cholesterol = 45
     
     # Desserts
-    elif any(word in food_lower for word in ["cake", "pie", "cookies", "ice cream", "brownie"]):
+    elif any(word in food_lower for word in ["cake", "pie", "cookies", "ice cream", "brownie", "chocolate"]):
         base_calories = 380
         base_protein = 5
         base_carbs = 55
         base_fat = 16
+        base_fiber = 2
+        base_sugar = 45
+        base_sodium = 350
+        base_cholesterol = 65
     
-    # Breakfast items
-    elif any(word in food_lower for word in ["pancakes", "waffles", "french toast", "oatmeal"]):
-        base_calories = 320
-        base_protein = 10
-        base_carbs = 50
-        base_fat = 10
-    
-    # Beverages
-    elif any(word in food_lower for word in ["smoothie", "juice", "shake", "coffee"]):
-        base_calories = 150
-        base_protein = 5
-        base_carbs = 25
+    # Soups
+    elif any(word in food_lower for word in ["soup", "broth", "stew"]):
+        base_calories = 120
+        base_protein = 6
+        base_carbs = 18
         base_fat = 3
-        
-        if "protein shake" in food_lower:
-            base_protein = 25
-            base_calories = 220
-    
-    # Adjust for modifiers
-    if "organic" in food_lower:
-        base_calories *= 0.95
-    if "gourmet" in food_lower or "special" in food_lower:
-        base_calories *= 1.1
-        base_fat *= 1.2
+        base_fiber = 2
+        base_sugar = 4
+        base_sodium = 500
+        base_cholesterol = 5
     
     # Scale by serving size
     scale_factor = serving_grams / 150.0
@@ -118,7 +184,11 @@ def calculate_dynamic_nutrition(food_name: str, serving_grams: float = None) -> 
         "calories": round(base_calories * scale_factor),
         "protein_g": round(base_protein * scale_factor, 1),
         "carbs_g": round(base_carbs * scale_factor, 1),
-        "fat_g": round(base_fat * scale_factor, 1)
+        "fat_g": round(base_fat * scale_factor, 1),
+        "fiber_g": round(base_fiber * scale_factor, 1),
+        "sugar_g": round(base_sugar * scale_factor, 1),
+        "sodium_mg": round(base_sodium * scale_factor),
+        "cholesterol_mg": round(base_cholesterol * scale_factor)
     }
 
 def generate_dynamic_recipes(food_name: str, nutrition_info: dict) -> List[RecipeCard]:
@@ -202,10 +272,10 @@ def generate_profile_and_recipes(topk: List[Tuple[str, float]], notes: Optional[
             "fat_g": nutrition_info["fat_g"]
         },
         micronutrients={
-            "fiber_g": round(nutrition_info["carbs_g"] * 0.1, 1),
-            "sugar_g": round(nutrition_info["carbs_g"] * 0.3, 1),
-            "sodium_mg": round(nutrition_info["calories"] * 1.5),
-            "cholesterol_mg": round(nutrition_info["fat_g"] * 10) if "meat" in main_food.lower() else 0
+            "fiber_g": nutrition_info.get("fiber_g", round(nutrition_info["carbs_g"] * 0.1, 1)),
+            "sugar_g": nutrition_info.get("sugar_g", round(nutrition_info["carbs_g"] * 0.3, 1)),
+            "sodium_mg": nutrition_info.get("sodium_mg", round(nutrition_info["calories"] * 1.5)),
+            "cholesterol_mg": nutrition_info.get("cholesterol_mg", round(nutrition_info["fat_g"] * 10) if "meat" in main_food.lower() else 0)
         }
     )
     
