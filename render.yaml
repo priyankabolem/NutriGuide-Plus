@@ -9,5 +9,7 @@ services:
         value: 3.11.9
       - key: ENV
         value: production
+      - key: GOOGLE_VISION_API_KEY
+        sync: false  # This will be set in Render dashboard as a secret
     healthCheckPath: /health
     autoDeploy: true

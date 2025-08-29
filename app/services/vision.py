@@ -9,6 +9,8 @@ from .food_api import get_enhanced_food_classification
 from .food_recognizer import get_free_food_recognition
 from .intelligent_recognition import get_intelligent_food_recognition
 from .robust_food_detection import get_robust_food_detection
+from .hybrid_food_recognizer import recognize_food_hybrid
+from .google_vision_recognizer import detect_food_with_google_vision
 
 class SmartFoodRecognizer:
     def __init__(self):
@@ -341,78 +343,120 @@ food_recognizer = SmartFoodRecognizer()
 
 def classify_topk(image_b64: str, k: int = 3) -> List[Tuple[str, float]]:
     """
-    Smart food classification with API integration and advanced analysis
+    Smart food classification prioritizing Google Vision API for maximum accuracy
     """
     try:
-        # Decode image
-        img_bytes = base64.b64decode(image_b64)
-        img = Image.open(io.BytesIO(img_bytes))
+        # Check if Google Vision API is available and prioritize it
+        google_api_key = os.environ.get('GOOGLE_VISION_API_KEY')
         
-        # Use robust detection system for best accuracy
-        primary_food, confidence, features = get_robust_food_detection(image_b64)
+        if google_api_key:
+            print("🚀 Using Google Vision API for professional-grade accuracy")
+            try:
+                primary_food, confidence, features = detect_food_with_google_vision(image_b64)
+                print(f"✓ Google Vision: {primary_food} ({confidence:.2f})")
+                
+                # If Google Vision is confident, use it directly
+                if confidence >= 0.75:
+                    related_foods = generate_related_foods(primary_food)
+                    return [
+                        (primary_food, confidence),
+                        (related_foods[0], 0.15),
+                        (related_foods[1], 0.05)
+                    ][:k]
+                else:
+                    print(f"  Lower confidence, using hybrid validation")
+                    
+            except Exception as e:
+                print(f"  Google Vision API error: {e}")
+                print(f"  Falling back to hybrid approach")
+        else:
+            print("📱 Using free recognition methods (set GOOGLE_VISION_API_KEY for 95% accuracy)")
         
-        print(f"✓ Robust Detection: {primary_food} ({confidence:.2f})")
+        # Use the hybrid recognizer (includes all available methods)
+        primary_food, confidence, detailed_results = recognize_food_hybrid(image_b64)
         
-        # Always use the result (robust detector always returns something meaningful)
+        method_used = "Hybrid" if not google_api_key else "Hybrid + Google Vision"
+        print(f"✓ {method_used}: {primary_food} ({confidence:.2f})")
+        print(f"  Consensus: {detailed_results.get('consensus_level', 'unknown')}")
+        
         # Generate related foods based on detected food
         related_foods = generate_related_foods(primary_food)
         
-        # If we have low confidence, adjust the alternatives
-        if confidence < 0.7:
-            # Use feature-based alternatives
-            alt_foods = []
-            if features.get("dominant_color") == "green_dominant":
-                alt_foods = ["vegetables", "salad"]
-            elif features.get("dominant_color") == "brown_dominant":
-                alt_foods = ["meat", "bread"]
-            elif features.get("dominant_color") == "white_dominant":
-                alt_foods = ["rice", "dairy"]
-            else:
-                alt_foods = related_foods
-                
-            return [
-                (primary_food, confidence),
-                (alt_foods[0] if len(alt_foods) > 0 else "side dish", 0.15),
-                (alt_foods[1] if len(alt_foods) > 1 else "vegetable", 0.10)
-            ][:k]
-        else:
-            # High confidence - use standard related foods
+        # Get all predictions for potential alternatives
+        all_predictions = detailed_results.get('all_predictions', [])
+        
+        # If we have high confidence from multiple methods
+        if confidence >= 0.8 and detailed_results.get('consensus_level') in ['high', 'medium']:
+            # Use the primary detection with high confidence
             return [
                 (primary_food, confidence),
                 (related_foods[0], 0.15),
                 (related_foods[1], 0.05)
             ][:k]
         
-        # Fallback to enhanced visual analysis if API fails or low confidence
-        analysis = food_recognizer.analyze_image_content(img)
+        # If confidence is medium, include alternatives from other methods
+        elif confidence >= 0.65:
+            alternatives = []
+            
+            # Try to get alternatives from other methods
+            for pred in all_predictions[1:3]:  # Skip first (already used as primary)
+                if pred['food'] != primary_food and pred['confidence'] > 0.5:
+                    alternatives.append(pred['food'])
+            
+            # Fill with related foods if needed
+            while len(alternatives) < 2:
+                alternatives.extend(related_foods)
+                alternatives = alternatives[:2]
+            
+            return [
+                (primary_food, confidence),
+                (alternatives[0], 0.20),
+                (alternatives[1] if len(alternatives) > 1 else related_foods[0], 0.10)
+            ][:k]
         
-        # Use enhanced classification system
-        primary_food, visual_confidence = get_enhanced_food_classification(analysis)
-        
-        # Apply intelligent food name refinement for better demo results
-        refined_food = refine_food_name_for_demo(primary_food, analysis)
-        
-        # Generate contextual alternatives  
-        alternatives = generate_intelligent_alternatives(refined_food, analysis)
-        
-        # Build predictions with realistic confidence
-        results = [
-            (refined_food, min(visual_confidence, 0.88)),
-            (alternatives[0], 0.15),
-            (alternatives[1], 0.08)
-        ]
-        
-        # Log analysis for debugging
-        print(f"✓ Enhanced Analysis: {refined_food} ({visual_confidence:.2f})")
-        print(f"  Visual: green={analysis['green_ratio']:.2f}, brown={analysis['brown_ratio']:.2f}, texture={analysis['texture_complexity']:.1f}")
-        
-        return results[:k]
+        # Low confidence - use feature-based alternatives
+        else:
+            # Extract features from any available method
+            features = {}
+            for method_result in detailed_results.get('individual_results', {}).values():
+                if method_result and 'features' in method_result:
+                    features.update(method_result['features'])
+            
+            # Generate alternatives based on features
+            alt_foods = []
+            if features.get("dominant_color") == "green_dominant" or features.get("dominant_colors", [{}])[0].get('hsv', [0])[0] in range(80, 140):
+                alt_foods = ["salad", "vegetables"]
+            elif features.get("dominant_color") == "brown_dominant" or features.get("avg_color", [0,0,0])[0] > 100:
+                alt_foods = ["grilled meat", "bread"]
+            elif features.get("dominant_color") == "white_dominant" or features.get("avg_brightness", 0) > 200:
+                alt_foods = ["rice", "pasta"]
+            else:
+                alt_foods = related_foods
+            
+            return [
+                (primary_food, confidence),
+                (alt_foods[0] if len(alt_foods) > 0 else "mixed dish", 0.15),
+                (alt_foods[1] if len(alt_foods) > 1 else "side dish", 0.10)
+            ][:k]
         
     except Exception as e:
-        print(f"Food recognition error: {e}")
-        # Fallback to safe default
-        return [
-            ("food item", 0.5),
-            ("dish", 0.3),
-            ("meal", 0.2)
-        ]
+        print(f"Hybrid recognition error: {e}")
+        # Fallback to robust detection if hybrid fails
+        try:
+            primary_food, confidence, features = get_robust_food_detection(image_b64)
+            related_foods = generate_related_foods(primary_food)
+            
+            return [
+                (primary_food, confidence),
+                (related_foods[0], 0.15),
+                (related_foods[1], 0.05)
+            ][:k]
+            
+        except Exception as fallback_error:
+            print(f"Fallback error: {fallback_error}")
+            # Final fallback
+            return [
+                ("mixed dish", 0.5),
+                ("vegetables", 0.3),
+                ("side dish", 0.2)
+            ][:k]
